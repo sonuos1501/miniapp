@@ -22,7 +22,7 @@ packages:
     description:
       path: "packages/camera/camera"
       ref: master
-      resolved-ref: fe40045e513730e19dbee50852844dbac503e588
+      resolved-ref: "942cffdf3f4c7e780b4caff955793c119dd98a8e"
       url: "https://github.com/Techainer/flutter-camera-package.git"
     source: git
     version: "0.10.3+2"
