@@ -34,7 +34,7 @@ dependencies:
   camera:
     git:
       url: https://github.com/Techainer/flutter-camera-package.git
-      ref: master
+      ref: lucas_handle_resolution_prest
       path: packages/camera/camera
 
   # The following adds the Cupertino Icons font to your application.
