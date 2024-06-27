@@ -9,6 +9,8 @@ import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:miniapp/image_utils.dart';
+import 'package:path_provider/path_provider.dart';
 // import 'package:video_player/video_player.dart';
 
 /// Camera example home widget.
@@ -46,6 +48,7 @@ void _logError(String code, String? message) {
 class _CameraExampleHomeState extends State<CameraExampleHome>
     with WidgetsBindingObserver, TickerProviderStateMixin {
   CameraController? controller;
+  CameraImage? currentImage;
   XFile? imageFile;
   XFile? videoFile;
   // VideoPlayerController? videoController;
@@ -148,7 +151,9 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
               child: Padding(
                 padding: const EdgeInsets.all(1.0),
                 child: Center(
-                  child: _cameraPreviewWidget(),
+                  child: imageFile == null
+                      ? _cameraPreviewWidget()
+                      : Image.file(File(imageFile!.path)),
                 ),
               ),
             ),
@@ -221,44 +226,44 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
 
   /// Display the thumbnail of the captured image or video.
   // Widget _thumbnailWidget() {
-    // final VideoPlayerController? localVideoController = videoController;
+  // final VideoPlayerController? localVideoController = videoController;
 
-    // return Expanded(
-    //   child: Align(
-    //     alignment: Alignment.centerRight,
-    //     child: Row(
-    //       mainAxisSize: MainAxisSize.min,
-    //       children: <Widget>[
-    //         if (localVideoController == null && imageFile == null)
-    //           Container()
-    //         else
-    //           SizedBox(
-    //             width: 64.0,
-    //             height: 64.0,
-    //             child: (localVideoController == null)
-    //                 ? (
-    //                     // The captured image on the web contains a network-accessible URL
-    //                     // pointing to a location within the browser. It may be displayed
-    //                     // either with Image.network or Image.memory after loading the image
-    //                     // bytes to memory.
-    //                     kIsWeb
-    //                         ? Image.network(imageFile!.path)
-    //                         : Image.file(File(imageFile!.path)))
-    //                 : Container(
-    //                     decoration: BoxDecoration(
-    //                         border: Border.all(color: Colors.pink)),
-    //                     child: Center(
-    //                       child: AspectRatio(
-    //                           aspectRatio:
-    //                               localVideoController.value.aspectRatio,
-    //                           child: VideoPlayer(localVideoController)),
-    //                     ),
-    //                   ),
-    //           ),
-    //       ],
-    //     ),
-    //   ),
-    // );
+  // return Expanded(
+  //   child: Align(
+  //     alignment: Alignment.centerRight,
+  //     child: Row(
+  //       mainAxisSize: MainAxisSize.min,
+  //       children: <Widget>[
+  //         if (localVideoController == null && imageFile == null)
+  //           Container()
+  //         else
+  //           SizedBox(
+  //             width: 64.0,
+  //             height: 64.0,
+  //             child: (localVideoController == null)
+  //                 ? (
+  //                     // The captured image on the web contains a network-accessible URL
+  //                     // pointing to a location within the browser. It may be displayed
+  //                     // either with Image.network or Image.memory after loading the image
+  //                     // bytes to memory.
+  //                     kIsWeb
+  //                         ? Image.network(imageFile!.path)
+  //                         : Image.file(File(imageFile!.path)))
+  //                 : Container(
+  //                     decoration: BoxDecoration(
+  //                         border: Border.all(color: Colors.pink)),
+  //                     child: Center(
+  //                       child: AspectRatio(
+  //                           aspectRatio:
+  //                               localVideoController.value.aspectRatio,
+  //                           child: VideoPlayer(localVideoController)),
+  //                     ),
+  //                   ),
+  //           ),
+  //       ],
+  //     ),
+  //   ),
+  // );
   // }
 
   /// Display a bar with buttons to change the flash and exposure modes
@@ -566,6 +571,8 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
     final List<Widget> toggles = <Widget>[];
 
     void onChanged(CameraDescription? description) {
+      imageFile = null;
+      setState(() {});
       if (description == null) {
         return;
       }
@@ -669,6 +676,11 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
             .getMinZoomLevel()
             .then((double value) => _minAvailableZoom = value),
       ]);
+      if (cameraController.value.isInitialized) {
+        cameraController.startImageStream((CameraImage image) {
+          currentImage = image;
+        });
+      }
     } on CameraException catch (e) {
       switch (e.code) {
         case 'CameraAccessDenied':
@@ -1018,8 +1030,13 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
     }
 
     try {
-      final XFile file = await cameraController.takePicture();
-      return file;
+      // final XFile file = await cameraController.takePicture();
+      final yuvBytes = currentImage!.planes[0].bytes;
+      // Store image in temp directory
+      final directory = await getTemporaryDirectory();
+      final imageFile = File('${directory.path}/tempImage.jpg');
+      await imageFile.writeAsBytes(yuvBytes);
+      return XFile(imageFile.path);
     } on CameraException catch (e) {
       _showCameraException(e);
       return null;
