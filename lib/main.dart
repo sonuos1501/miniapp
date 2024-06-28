@@ -48,9 +48,9 @@ class _CameraAppState extends State<CameraApp> {
       setState(() {});
     });
 
-    _controller.startImageStream((image) {
-      currentImage = image;
-    });
+    // _controller.startImageStream((image) {
+    //   currentImage = image;
+    // });
   }
 
   @override
@@ -87,15 +87,19 @@ class _CameraAppState extends State<CameraApp> {
           }
           // Chụp ảnh
           try {
+            await _controller!.setFocusMode(FocusMode.locked);
+            await _controller!.setExposureMode(ExposureMode.locked);
             // Chụp ảnh
-            // XFile image = await _controller.takePicture();
-            final yuvBytes = currentImage!.planes[0].bytes;
-            // Store image in temp directory
-            final directory = await getTemporaryDirectory();
-            final file = File('${directory.path}/tempImage.jpg');
-            await file.writeAsBytes(yuvBytes);
+            XFile image = await _controller.takePicture();
+            await _controller!.setFocusMode(FocusMode.auto);
+            await _controller!.setExposureMode(ExposureMode.auto);
+            // final yuvBytes = currentImage!.planes[0].bytes;
+            // // Store image in temp directory
+            // final directory = await getTemporaryDirectory();
+            // final file = File('${directory.path}/tempImage.jpg');
+            // await file.writeAsBytes(yuvBytes);
             // Lưu ảnh vào bộ nhớ
-            imageFile = XFile(file.path);
+            imageFile = image;
             setState(() {});
             // Hiển thị thông báo
             ScaffoldMessenger.of(context)
